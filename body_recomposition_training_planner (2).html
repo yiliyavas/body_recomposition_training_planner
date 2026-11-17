@@ -268,7 +268,10 @@
                     </div>
                     <div class="flex items-center gap-3 text-xs font-mono-note">
                         <span class="flex items-center gap-1.5 text-[#24211e]">
-                            <span class="w-2.5 h-2.5 rounded-xs bg-[#722f37] inline-block"></span> Weight
+                            <span class="w-2.5 h-2.5 rounded-xs bg-[#722f37] inline-block"></span> Projected
+                        </span>
+                        <span class="flex items-center gap-1.5 text-[#455c45]">
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#5c765c] inline-block"></span> Completed Wks
                         </span>
                         <span class="flex items-center gap-1.5 text-[#6b6661]">
                             <span class="w-3 h-0.5 inline-block border-t-2 border-dashed border-[#5c765c]"></span> 115lb Goal
@@ -283,28 +286,34 @@
                         <svg id="trajectoryChart" class="w-full h-full overflow-visible" viewBox="0 0 600 240" preserveAspectRatio="none"></svg>
                     </div>
 
-                    <!-- Dynamic Weekly Schedule Prescription -->
-                    <div class="mt-6 pt-4 border-t border-[#e6e1d8]">
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="text-xs font-mono-note font-bold uppercase tracking-wider text-[#6b6661]">Auto-Generated Weekly Notes</h3>
-                            <span id="weeklyVolumeBadge" class="text-xs font-mono-note font-semibold text-[#455c45] bg-[#eff4ef] px-2 py-0.5 rounded-xs border border-[#b8cab8]">4 Sessions / Week</span>
+                    <!-- 12-Week Completion & Progress Checkpoint Strip -->
+                    <div class="mt-4 pt-4 border-t border-[#e6e1d8]">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2.5">
+                            <div>
+                                <h3 class="text-xs font-mono-note font-bold uppercase tracking-wider text-[#722f37]">12-Week Checkpoint Log (Click Week to Mark Complete)</h3>
+                                <p class="text-[11px] text-[#6b6661]">Check off completed weeks or edit actual scale weight to plot real progress on the graph above.</p>
+                            </div>
+                            <span id="completedWeeksBadge" class="text-xs font-mono-note font-semibold text-[#455c45] bg-[#eff4ef] px-2 py-0.5 rounded-xs border border-[#b8cab8] self-start sm:self-auto">
+                                0 / 12 Weeks Done
+                            </span>
                         </div>
-                        <div id="weeklyRoutineGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div id="weekCheckpointsGrid" class="grid grid-cols-3 sm:grid-cols-6 gap-2">
                             <!-- Populated dynamically by JS -->
                         </div>
                     </div>
-                </div>
-            </div>
-        </section>
 
-        <!-- Daily Intake Reality Check -->
-        <section class="notepad-card p-6">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#e6e1d8] pb-3" data-section-header>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h2 class="text-sm font-mono-note font-bold uppercase tracking-wide text-[#722f37]">03 // Daily Intake Reality Check</h2>
-                        <span class="px-2 py-0.5 rounded-xs text-[11px] font-mono-note font-semibold bg-[#f8eff0] text-[#722f37] border border-[#d9b8bc]">Single-Day Impact</span>
+                    <!-- Dynamic Weekly Schedule Prescription -->
+                    <div class="mt-5 pt-4 border-t border-[#e6e1d8]">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-xs font-mono-note font-bold uppercase tracking-wider text-[#722f37]">Weekly Schedule Anchor</h3>
+                            <span class="text-[11px] font-mono-note text-[#455c45]">Tue & Thu/Fri Pilates</span>
+                        </div>
+                        <div id="weeklyRoutineGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <!-- Populated dynamically by JS -->
+                        </div>
                     </div>
+                    <p class="text-xs text-[#6b6661] mt-3">Log today's calories and protein to project what happens if you repeat this day.</p>
+                </div>
                     <p class="text-xs text-[#6b6661] mt-0.5">Log today's calories and protein to project what happens if you repeat this day.</p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -481,6 +490,13 @@
             { day: 'Sun', cals: 1400, protein: 100, exerciseDone: false }
         ];
 
+        // 12-Week Completion Checkpoints State (Weeks 1 - 12)
+        let weekCheckpoints = Array.from({ length: 12 }, (_, i) => ({
+            week: i + 1,
+            completed: false,
+            customWeight: null
+        }));
+
         // Simulation Engine: Models physiological + behavioral friction math
         function simulateScenario(deficit, proteinCompliance, homeSplit) {
             // 1. Behavioral Adherence Multiplier:
@@ -608,20 +624,120 @@
 
             // Main Weight Line (Burgundy)
             const lineD = weightPoints.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-            html += `<path d="${lineD}" fill="none" stroke="#722f37" stroke-width="2.5" stroke-linecap="round" />`;
+            html += `<path d="${lineD}" fill="none" stroke="#722f37" stroke-width="2" stroke-dasharray="4,3" stroke-linecap="round" opacity="0.75" />`;
+
+            // Actual Completed Weeks Progress Curve (Sage Green Solid Line)
+            const actualPoints = [{ x: getX(0), y: getY(START_WEIGHT), w: 0, val: START_WEIGHT }];
+            weekCheckpoints.forEach(cp => {
+                if (cp.completed) {
+                    const projectedAtWk = weightPoints[cp.week].val;
+                    const actualVal = cp.customWeight !== null ? cp.customWeight : +projectedAtWk.toFixed(1);
+                    actualPoints.push({
+                        x: getX(cp.week),
+                        y: getY(actualVal),
+                        w: cp.week,
+                        val: actualVal
+                    });
+                }
+            });
+
+            if (actualPoints.length > 1) {
+                const actualLineD = actualPoints.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+                html += `<path d="${actualLineD}" fill="none" stroke="#5c765c" stroke-width="3" stroke-linecap="round" />`;
+            }
 
             // X-Axis Week Labels & Data Dots
             [0, 3, 6, 9, 12].forEach(wk => {
                 const pt = weightPoints[wk];
                 html += `<text x="${pt.x}" y="${height - 8}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#6b6661">Wk ${wk}</text>`;
-                html += `<circle cx="${pt.x}" cy="${pt.y}" r="3.5" fill="#faf8f5" stroke="#722f37" stroke-width="2" />`;
+                html += `<circle cx="${pt.x}" cy="${pt.y}" r="3" fill="#faf8f5" stroke="#722f37" stroke-width="1.5" />`;
                 if (wk === 12) {
                     html += `<rect x="${pt.x - 38}" y="${pt.y - 24}" width="46" height="18" rx="2" fill="#722f37" />`;
                     html += `<text x="${pt.x - 15}" y="${pt.y - 12}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" font-weight="bold" fill="#ffffff">${sim.endWeight}</text>`;
                 }
             });
 
+            // Plot Completed Week Nodes (Sage Green Solid Dots + Latest Callout)
+            actualPoints.slice(1).forEach((pt, idx, arr) => {
+                html += `<circle cx="${pt.x}" cy="${pt.y}" r="4.5" fill="#5c765c" stroke="#ffffff" stroke-width="1.5" />`;
+                if (idx === arr.length - 1) {
+                    html += `<rect x="${pt.x - 23}" y="${pt.y + 8}" width="46" height="16" rx="2" fill="#5c765c" />`;
+                    html += `<text x="${pt.x}" y="${pt.y + 19}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" font-weight="bold" fill="#ffffff">${pt.val.toFixed(1)}</text>`;
+                }
+            });
+
             svg.innerHTML = html;
+        }
+
+        // Render 12-Week Checkpoint Log Grid
+        function renderWeekCheckpoints(sim) {
+            const grid = document.getElementById('weekCheckpointsGrid');
+            const badge = document.getElementById('completedWeeksBadge');
+            const completedCount = weekCheckpoints.filter(c => c.completed).length;
+            const latestCompleted = [...weekCheckpoints].reverse().find(c => c.completed);
+
+            if (latestCompleted) {
+                const projAtLatest = +(START_WEIGHT - (sim.totalWeightLost * Math.pow(latestCompleted.week / HORIZON_WEEKS, 0.94))).toFixed(1);
+                const latestWeight = latestCompleted.customWeight !== null ? latestCompleted.customWeight : projAtLatest;
+                const lostSoFar = +(START_WEIGHT - latestWeight).toFixed(1);
+                badge.textContent = `Wk ${latestCompleted.week} Done • ${lostSoFar >= 0 ? '-' + lostSoFar : '+' + Math.abs(lostSoFar)} lbs`;
+            } else {
+                badge.textContent = `${completedCount} / 12 Weeks Done`;
+            }
+
+            grid.innerHTML = weekCheckpoints.map((cp, idx) => {
+                const projWeight = +(START_WEIGHT - (sim.totalWeightLost * Math.pow(cp.week / HORIZON_WEEKS, 0.94))).toFixed(1);
+                const displayWeight = cp.customWeight !== null ? cp.customWeight : projWeight;
+
+                return `
+                    <div class="rounded-xs border p-2 transition ${
+                        cp.completed 
+                            ? 'bg-[#eff4ef]/70 border-[#5c765c]' 
+                            : 'bg-[#faf8f5] border-[#dcd5c9] hover:border-[#722f37]/50'
+                    }">
+                        <button type="button" data-wk-idx="${idx}" class="wk-complete-toggle w-full flex items-center justify-between text-[11px] font-mono-note font-bold cursor-pointer ${
+                            cp.completed ? 'text-[#455c45]' : 'text-[#24211e]'
+                        }">
+                            <span>Wk ${cp.week}</span>
+                            <span>${cp.completed ? '[✓]' : '[ ]'}</span>
+                        </button>
+                        <div class="mt-1.5 flex items-center gap-1">
+                            <input type="number" step="0.1" min="95" max="150"
+                                data-wk-idx="${idx}"
+                                value="${displayWeight.toFixed(1)}"
+                                title="Logged or projected weight for Week ${cp.week}"
+                                class="wk-weight-input w-full rounded-xs border px-1.5 py-0.5 text-[11px] font-mono-note font-semibold focus:outline-none ${
+                                    cp.completed 
+                                        ? 'bg-white border-[#b8cab8] text-[#24211e] focus:border-[#5c765c]' 
+                                        : 'bg-white/70 border-[#e6e1d8] text-[#6b6661] focus:border-[#722f37]'
+                                }">
+                            <span class="text-[10px] font-mono-note text-[#6b6661]">lb</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Toggle week completion
+            grid.querySelectorAll('.wk-complete-toggle').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(e.currentTarget.dataset.wkIdx, 10);
+                    weekCheckpoints[idx].completed = !weekCheckpoints[idx].completed;
+                    updateDashboard();
+                });
+            });
+
+            // Edit actual scale weight for that week (auto-marks week complete)
+            grid.querySelectorAll('.wk-weight-input').forEach(inp => {
+                inp.addEventListener('change', (e) => {
+                    const idx = parseInt(e.target.dataset.wkIdx, 10);
+                    const val = parseFloat(e.target.value);
+                    if (!isNaN(val) && val > 0) {
+                        weekCheckpoints[idx].customWeight = +val.toFixed(1);
+                        weekCheckpoints[idx].completed = true;
+                        updateDashboard();
+                    }
+                });
+            });
         }
 
         // Render Dynamic Weekly Routine Cards (Notepad Marginalia Style)
@@ -1031,6 +1147,7 @@
 
             // Render Sub-components
             renderChart(sim);
+            renderWeekCheckpoints(sim);
             renderWeeklyRoutine(sim, protein);
             renderComparisonCards(deficit, protein, homeSplit);
             updateDailyIntakeCheck();
@@ -1085,6 +1202,10 @@
             sliderHomeSplit.value = 60;
             inputCalories.value = 1375;
             inputProtein.value = 95;
+            weekCheckpoints.forEach(cp => {
+                cp.completed = false;
+                cp.customWeight = null;
+            });
             updateDashboard();
         });
 
