@@ -79,8 +79,8 @@
             <div class="flex items-center gap-3">
                 <div class="w-1.5 h-8 bg-[#722f37] rounded-xs"></div>
                 <div>
-                    <h1 class="text-lg font-bold text-[#24211e] tracking-tight font-mono-note">RECOMP_PLANNER.txt</h1>
-                    <p class="text-xs text-[#6b6661]">Baseline: 125 lbs • Goal: -10 lbs (115 lbs) & Core Definition</p>
+                    <h1 class="text-lg font-bold text-[#24211e] tracking-tight font-mono-note">12 Week Plan to Lose 10 Pounds</h1>
+                    <p class="text-xs text-[#6b6661]">Baseline: <span id="headerBaseWeightDisplay">125</span> lbs • Goal: -10 lbs (115 lbs) & Core Definition</p>
                 </div>
             </div>
             <div class="flex items-center gap-3">
@@ -89,7 +89,7 @@
                 </span>
                 <div class="flex items-center gap-1.5 px-2 py-1 rounded-xs bg-white border border-[#dcd5c9] text-xs font-mono-note">
                     <span class="text-[#6b6661]">Start:</span>
-                    <input type="number" id="inputStartWeight" value="125.0" step="0.5" min="90" max="250"
+                    <input type="number" id="inputStartWeight" value="125" step="0.5" min="90" max="250"
                         class="w-14 font-bold text-[#24211e] bg-transparent focus:outline-none text-right">
                     <span class="text-[#6b6661]">lbs</span>
                 </div>
@@ -1123,6 +1123,11 @@
             if (!isNaN(parsedStart) && parsedStart > 70 && parsedStart < 300) {
                 START_WEIGHT = parsedStart;
                 TARGET_WEIGHT = +(START_WEIGHT - 10.0).toFixed(1);
+                document.getElementById('headerBaseWeightDisplay').textContent = START_WEIGHT;
+            } else {
+                START_WEIGHT = 125.0;
+                TARGET_WEIGHT = 115.0;
+                document.getElementById('headerBaseWeightDisplay').textContent = "125";
             }
 
             // Update Slider Readouts
@@ -1225,9 +1230,10 @@
             sliderHomeSplit.value = 60;
             inputCalories.value = 1375;
             inputProtein.value = 95;
-            inputStartWeight.value = "125.0";
+            inputStartWeight.value = "125";
             START_WEIGHT = 125.0;
             TARGET_WEIGHT = 115.0;
+            document.getElementById('headerBaseWeightDisplay').textContent = "125";
             weekCheckpoints.forEach(cp => {
                 cp.completed = false;
                 cp.customWeight = null;
