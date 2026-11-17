@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Body Recomposition & Training Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --paper-bg: #faf8f5;
+            --card-bg: #ffffff;
+            --burgundy: #722f37;
+            --burgundy-light: #f8eff0;
+            --burgundy-border: #d9b8bc;
+            --sage: #5c765c;
+            --sage-light: #eff4ef;
+            --sage-border: #b8cab8;
+            --ink: #24211e;
+            --ink-muted: #6b6661;
+            --rule-line: #e6e1d8;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--paper-bg);
+            color: var(--ink);
+            /* Subtle notepad horizontal ruling */
+            background-image: linear-gradient(to bottom, transparent 31px, rgba(230, 225, 216, 0.35) 32px);
+            background-size: 100% 32px;
+        }
+        .font-mono-note {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Minimalist Notepad Card */
+        .notepad-card {
+            background-color: var(--card-bg);
+            border: 1px solid #dcd5c9;
+            border-radius: 6px;
+            box-shadow: 2px 2px 0px #e6e1d8;
+        }
+        /* Custom Range Slider Styling (Burgundy Thumb on Sage/Paper Track) */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 3px;
+            background: var(--burgundy);
+            border: 2px solid #ffffff;
+            cursor: pointer;
+            margin-top: -5px;
+            box-shadow: 0 1px 3px rgba(36, 33, 30, 0.3);
+            transition: transform 0.1s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #e6e1d8;
+            border-radius: 2px;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen pb-14">
+
+    <!-- Top Navigation / Header (Notepad Margin Style) -->
+    <header class="bg-[#faf8f5]/95 backdrop-blur-xs border-b-2 border-[#722f37]/30 sticky top-0 z-20">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div class="flex items-center gap-3">
+                <div class="w-1.5 h-8 bg-[#722f37] rounded-xs"></div>
+                <div>
+                    <h1 class="text-lg font-bold text-[#24211e] tracking-tight font-mono-note">RECOMP_PLANNER.txt</h1>
+                    <p class="text-xs text-[#6b6661]">Baseline: 125 lbs • Goal: -10 lbs (115 lbs) & Core Definition</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-xs text-xs font-mono-note font-medium bg-[#eff4ef] text-[#455c45] border border-[#b8cab8]">
+                    12-Week Horizon
+                </span>
+                <button id="resetBtn" class="text-xs font-mono-note font-medium text-[#722f37] hover:bg-[#f8eff0] px-3 py-1.5 rounded-xs border border-[#d9b8bc] transition cursor-pointer">
+                    [Reset]
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+
+        <!-- Goal Metric Hero Banner (Live Updating) -->
+        <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Primary Goal Card: Projected Weight & Loss -->
+            <div class="notepad-card p-5 flex flex-col justify-between border-t-4 border-t-[#722f37]">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-[11px] font-mono-note font-semibold uppercase tracking-wider text-[#6b6661]">12-Week Weight</p>
+                        <div class="flex items-baseline gap-1.5 mt-1">
+                            <span id="heroWeight" class="text-3xl font-bold font-mono-note text-[#24211e]">116.4</span>
+                            <span class="text-xs font-mono-note text-[#6b6661]">lbs</span>
+                        </div>
+                    </div>
+                    <span id="weightBadge" class="px-2 py-0.5 rounded-xs text-xs font-mono-note font-semibold bg-[#eff4ef] text-[#455c45] border border-[#b8cab8]">
+                        -8.6 lbs
+                    </span>
+                </div>
+                <div class="mt-4">
+                    <div class="flex justify-between text-xs text-[#6b6661] mb-1">
+                        <span>To 115 lbs goal</span>
+                        <span id="goalPercentText" class="font-mono-note font-semibold text-[#24211e]">86%</span>
+                    </div>
+                    <div class="w-full bg-[#efece6] rounded-xs h-1.5 overflow-hidden">
+                        <div id="goalProgressBar" class="bg-[#722f37] h-1.5 transition-all duration-200" style="width: 86%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ab Visibility Score -->
+            <div class="notepad-card p-5 flex flex-col justify-between border-t-4 border-t-[#5c765c]">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-[11px] font-mono-note font-semibold uppercase tracking-wider text-[#6b6661]">Ab Visibility</p>
+                        <div class="flex items-baseline gap-1.5 mt-1">
+                            <span id="heroAbScore" class="text-3xl font-bold font-mono-note text-[#24211e]">82</span>
+                            <span class="text-xs font-mono-note text-[#6b6661]">/ 100</span>
+                        </div>
+                    </div>
+                    <span id="abStatusBadge" class="px-2 py-0.5 rounded-xs text-xs font-mono-note font-semibold bg-[#eff4ef] text-[#455c45] border border-[#b8cab8]">
+                        Defined
+                    </span>
+                </div>
+                <p id="abSubtext" class="text-xs text-[#6b6661] mt-3 leading-relaxed">
+                    High protein + Pilates preserves lean mass while fat drops.
+                </p>
+            </div>
+
+            <!-- Muscle Retention Ratio -->
+            <div class="notepad-card p-5 flex flex-col justify-between border-t-4 border-t-[#722f37]">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-[11px] font-mono-note font-semibold uppercase tracking-wider text-[#6b6661]">Fat vs. Muscle</p>
+                        <div class="flex items-baseline gap-1.5 mt-1">
+                            <span id="heroFatRatio" class="text-3xl font-bold font-mono-note text-[#24211e]">88%</span>
+                            <span class="text-xs font-mono-note text-[#6b6661]">Fat</span>
+                        </div>
+                    </div>
+                    <span id="muscleBadge" class="px-2 py-0.5 rounded-xs text-xs font-mono-note font-semibold bg-[#eff4ef] text-[#455c45] border border-[#b8cab8]">
+                        Protected
+                    </span>
+                </div>
+                <p id="muscleSubtext" class="text-xs text-[#6b6661] mt-3 leading-relaxed">
+                    Prevents "skinny-fat" rebound on a petite frame.
+                </p>
+            </div>
+
+            <!-- Schedule Sustainability Score -->
+            <div class="notepad-card p-5 flex flex-col justify-between border-t-4 border-t-[#5c765c]">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-[11px] font-mono-note font-semibold uppercase tracking-wider text-[#6b6661]">Burnout Risk</p>
+                        <div class="flex items-baseline gap-1.5 mt-1">
+                            <span id="heroSustainability" class="text-3xl font-bold font-mono-note text-[#24211e]">Low</span>
+                        </div>
+                    </div>
+                    <span id="commuteSavedBadge" class="px-2 py-0.5 rounded-xs text-xs font-mono-note font-semibold bg-[#f8eff0] text-[#722f37] border border-[#d9b8bc]">
+                        48m saved/wk
+                    </span>
+                </div>
+                <p id="sustainabilitySubtext" class="text-xs text-[#6b6661] mt-3 leading-relaxed">
+                    Core Pilates & home workouts offset the 24-min gym commute.
+                </p>
+            </div>
+        </section>
+
+        <!-- Main Interactive Workspace: Levers (Left) + Trajectory Chart (Right) -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Column: Variable Sliders -->
+            <div class="lg:col-span-5 notepad-card p-6 space-y-5">
+                <div class="border-b border-[#e6e1d8] pb-3">
+                    <h2 class="text-sm font-mono-note font-bold uppercase tracking-wide text-[#722f37]">01 // Core Levers</h2>
+                    <p class="text-xs text-[#6b6661] mt-0.5">Adjust sliders to model your 12-week trajectory.</p>
+                </div>
+
+                <!-- Lever 1: Daily Calorie Deficit -->
+                <div class="p-4 rounded-xs bg-[#faf8f5] border border-[#e6e1d8] space-y-2.5">
+                    <div class="flex justify-between items-center">
+                        <label for="sliderDeficit" class="text-xs font-semibold text-[#24211e]">1. Daily Calorie Deficit</label>
+                        <span id="valDeficit" class="text-xs font-mono-note font-bold text-[#722f37] bg-[#f8eff0] px-2 py-0.5 rounded-xs border border-[#d9b8bc]">400 kcal/day</span>
+                    </div>
+                    <input type="range" id="sliderDeficit" min="150" max="750" step="25" value="400">
+                    <div class="flex justify-between text-[10px] font-mono-note text-[#6b6661]">
+                        <span>150 (Gentle)</span>
+                        <span>450 (Optimal)</span>
+                        <span>750 (Strict)</span>
+                    </div>
+                    <p id="descDeficit" class="text-xs text-[#6b6661] leading-relaxed pt-1 border-t border-dashed border-[#dcd5c9]">
+                        <span class="font-semibold text-[#24211e]">Food Choice:</span> Leaves room for convenience meals during busy work shifts.
+                    </p>
+                </div>
+
+                <!-- Lever 2: Protein Target Compliance -->
+                <div class="p-4 rounded-xs bg-[#faf8f5] border border-[#e6e1d8] space-y-2.5">
+                    <div class="flex justify-between items-center">
+                        <label for="sliderProtein" class="text-xs font-semibold text-[#24211e]">2. Protein Compliance</label>
+                        <span id="valProtein" class="text-xs font-mono-note font-bold text-[#455c45] bg-[#eff4ef] px-2 py-0.5 rounded-xs border border-[#b8cab8]">80% of days</span>
+                    </div>
+                    <input type="range" id="sliderProtein" min="30" max="100" step="5" value="80">
+                    <div class="flex justify-between text-[10px] font-mono-note text-[#6b6661]">
+                        <span>30% (Low)</span>
+                        <span>75% (Steady)</span>
+                        <span>100% (100g+)</span>
+                    </div>
+                    <p id="descProtein" class="text-xs text-[#6b6661] leading-relaxed pt-1 border-t border-dashed border-[#dcd5c9]">
+                        <span class="font-semibold text-[#24211e]">Muscle Shield:</span> ~100g daily protein forces fat loss from the midsection.
+                    </p>
+                </div>
+
+                <!-- Lever 3: Home vs Gym Split -->
+                <div class="p-4 rounded-xs bg-[#faf8f5] border border-[#e6e1d8] space-y-2.5">
+                    <div class="flex justify-between items-center">
+                        <label for="sliderHomeSplit" class="text-xs font-semibold text-[#24211e]">3. Home/Pilates vs. Gym</label>
+                        <span id="valHomeSplit" class="text-xs font-mono-note font-bold text-[#722f37] bg-[#f8eff0] px-2 py-0.5 rounded-xs border border-[#d9b8bc]">50% Home / 50% Gym</span>
+                    </div>
+                    <input type="range" id="sliderHomeSplit" min="0" max="100" step="10" value="50">
+                    <div class="flex justify-between text-[10px] font-mono-note text-[#6b6661]">
+                        <span>0% (All Gym)</span>
+                        <span>50% Hybrid</span>
+                        <span>100% No-Commute</span>
+                    </div>
+                    <p id="descHomeSplit" class="text-xs text-[#6b6661] leading-relaxed pt-1 border-t border-dashed border-[#dcd5c9]">
+                        <span class="font-semibold text-[#24211e]">Commute Buffer:</span> Anchors Tue & Thu/Fri Pilates while saving 24m gym drives.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right Column: Live Trajectory Chart & Weekly Execution Blueprint -->
+            <div class="lg:col-span-7 notepad-card p-6 flex flex-col justify-between">
+                <div>
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#e6e1d8] pb-3 mb-4">
+                        <div>
+                            <h2 class="text-sm font-mono-note font-bold uppercase tracking-wide text-[#455c45]">02 // 12-Week Trajectory</h2>
+                            <p class="text-xs text-[#6b6661]">Scale weight projection vs. 115 lbs goal line</p>
+                        </div>
+                        <div class="flex items-center gap-4 text-xs font-mono-note">
+                            <span class="flex items-center gap-1.5 text-[#24211e]">
+                                <span class="w-2.5 h-2.5 rounded-xs bg-[#722f37] inline-block"></span> Weight
+                            </span>
+                            <span class="flex items-center gap-1.5 text-[#6b6661]">
+                                <span class="w-3 h-0.5 inline-block border-t-2 border-dashed border-[#5c765c]"></span> 115lb Goal
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Responsive SVG Canvas -->
+                    <div class="w-full h-64 sm:h-72 relative bg-[#faf8f5] rounded-xs border border-[#e6e1d8] p-2">
+                        <svg id="trajectoryChart" class="w-full h-full overflow-visible" viewBox="0 0 600 240" preserveAspectRatio="none"></svg>
+                    </div>
+                </div>
+
+                <!-- Dynamic Weekly Schedule Prescription -->
+                <div class="mt-6 pt-4 border-t border-[#e6e1d8]">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xs font-mono-note font-bold uppercase tracking-wider text-[#6b6661]">Auto-Generated Weekly Notes</h3>
+                        <span id="weeklyVolumeBadge" class="text-xs font-mono-note font-semibold text-[#455c45] bg-[#eff4ef] px-2 py-0.5 rounded-xs border border-[#b8cab8]">4 Sessions / Week</span>
+                    </div>
+                    <div id="weeklyRoutineGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <!-- Populated dynamically by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Daily Intake Reality Check -->
+        <section class="notepad-card p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#e6e1d8] pb-3 mb-5">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-sm font-mono-note font-bold uppercase tracking-wide text-[#722f37]">03 // Daily Intake Reality Check</h2>
+                        <span class="px-2 py-0.5 rounded-xs text-[11px] font-mono-note font-semibold bg-[#f8eff0] text-[#722f37] border border-[#d9b8bc]">Single-Day Impact</span>
+                    </div>
+                    <p class="text-xs text-[#6b6661] mt-0.5">Log today's calories and protein to project what happens if you repeat this day.</p>
+                </div>
+                <div class="text-xs font-mono-note text-[#6b6661] bg-[#faf8f5] px-3 py-1.5 rounded-xs border border-[#e6e1d8]">
+                    Maint: <span class="font-bold text-[#24211e]">1,800 kcal</span> • Floor: <span class="font-bold text-[#24211e]">100g</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                <!-- Inputs Column -->
+                <div class="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="p-4 rounded-xs bg-[#faf8f5] border border-[#e6e1d8]">
+                        <label for="inputCalories" class="block text-xs font-semibold text-[#24211e] mb-1">Calories Eaten Today</label>
+                        <div class="relative">
+                            <input type="number" id="inputCalories" value="1400" min="500" max="4000" step="25"
+                                class="w-full rounded-xs border border-[#dcd5c9] bg-white px-3 py-1.5 text-base font-mono-note font-bold text-[#24211e] focus:border-[#722f37] focus:outline-none">
+                            <span class="absolute right-3 top-2 text-xs font-mono-note text-[#6b6661]">kcal</span>
+                        </div>
+                        <p id="calDiffText" class="text-[11px] font-medium text-[#455c45] mt-1.5">400 kcal deficit vs. maintenance</p>
+                    </div>
+
+                    <div class="p-4 rounded-xs bg-[#faf8f5] border border-[#e6e1d8]">
+                        <label for="inputProtein" class="block text-xs font-semibold text-[#24211e] mb-1">Protein Eaten Today</label>
+                        <div class="relative">
+                            <input type="number" id="inputProtein" value="95" min="0" max="300" step="5"
+                                class="w-full rounded-xs border border-[#dcd5c9] bg-white px-3 py-1.5 text-base font-mono-note font-bold text-[#24211e] focus:border-[#5c765c] focus:outline-none">
+                            <span class="absolute right-3 top-2 text-xs font-mono-note text-[#6b6661]">g</span>
+                        </div>
+                        <p id="protDiffText" class="text-[11px] font-medium text-[#455c45] mt-1.5">95% of 100g daily floor</p>
+                    </div>
+                </div>
+
+                <!-- Projected Impact Output Column (Burgundy & Sage Notepad Note) -->
+                <div class="lg:col-span-7 bg-[#faf8f5] border-l-4 border-l-[#722f37] border border-[#dcd5c9] rounded-xs p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="space-y-2 flex-1">
+                        <div class="flex items-center gap-2">
+                            <span id="dailyVerdictBadge" class="px-2 py-0.5 rounded-xs text-xs font-mono-note font-bold bg-[#eff4ef] text-[#455c45] border border-[#b8cab8]">
+                                On Track for Abs
+                            </span>
+                            <span id="dailyTimelineText" class="text-xs font-mono-note text-[#6b6661] font-medium">
+                                ~12.5 weeks to -10 lbs
+                            </span>
+                        </div>
+                        <p id="dailyImpactSummary" class="text-sm text-[#24211e] leading-relaxed">
+                            Repeating today's intake puts you at <span class="font-mono-note font-bold text-[#722f37]">115.4 lbs</span> in 12 weeks with an Ab Visibility score of <span class="font-mono-note font-bold text-[#455c45]">84/100</span>.
+                        </p>
+                        <p id="dailySingleDayNote" class="text-xs text-[#6b6661]">
+                            Single-day impact: Burns ~0.11 lbs of pure fat today while keeping muscle tissue protected.
+                        </p>
+                    </div>
+                    <div class="shrink-0">
+                        <button id="syncDailyBtn" class="w-full sm:w-auto px-4 py-2 rounded-xs bg-[#722f37] hover:bg-[#5c252c] text-white text-xs font-mono-note font-semibold transition cursor-pointer">
+                            Simulate Day →
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7-Day Variable Completion & Reality Projection Tracker -->
+        <section class="notepad-card p-6 space-y-5">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b border-[#e6e1d8] pb-3">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-sm font-mono-note font-bold uppercase tracking-wide text-[#455c45]">04 // 7-Day Execution Log</h2>
+                        <span class="px-2 py-0.5 rounded-xs text-[11px] font-mono-note font-semibold bg-[#eff4ef] text-[#455c45] border border-[#b8cab8]">Tue & Thu/Fri Pilates</span>
+                    </div>
+                    <p class="text-xs text-[#6b6661] mt-0.5">Track daily completion across your week to project where your actual habits land in 12 weeks.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="fillSampleWeekBtn" class="text-xs font-mono-note font-medium text-[#455c45] hover:bg-[#eff4ef] px-3 py-1.5 rounded-xs border border-[#b8cab8] transition cursor-pointer">
+                        [Load Busy Week]
+                    </button>
+                    <button id="syncWeekToSlidersBtn" class="text-xs font-mono-note font-semibold text-white bg-[#5c765c] hover:bg-[#496049] px-3 py-1.5 rounded-xs transition cursor-pointer">
+                        Apply Week Avg →
+                    </button>
+                </div>
+            </div>
+
+            <!-- 7-Day Interactive Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3" id="weeklyTrackerGrid">
+                <!-- Populated dynamically by JS -->
+            </div>
+
+            <!-- Live Projection Banner from Logged 7-Day Actuals -->
+            <div class="rounded-xs bg-[#faf8f5] border border-[#dcd5c9] p-4 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                <div class="space-y-1">
+                    <span class="text-[10px] font-mono-note font-bold uppercase tracking-wider text-[#6b6661]">Logged Completion</span>
+                    <div class="flex flex-wrap items-center gap-1.5 text-[11px] font-mono-note font-semibold text-[#24211e]">
+                        <span id="wkCalCompliance" class="px-2 py-0.5 rounded-xs bg-white border border-[#dcd5c9]">Cal: 5/7</span>
+                        <span id="wkProtCompliance" class="px-2 py-0.5 rounded-xs bg-white border border-[#dcd5c9]">Prot: 5/7</span>
+                        <span id="wkExCompliance" class="px-2 py-0.5 rounded-xs bg-white border border-[#dcd5c9]">Ex: 5/7</span>
+                    </div>
+                </div>
+
+                <div class="space-y-0.5">
+                    <span class="text-[10px] font-mono-note font-bold uppercase tracking-wider text-[#6b6661]">Weekly Avg Intake</span>
+                    <div id="wkActualAverages" class="text-sm font-mono-note font-bold text-[#24211e]">
+                        365 kcal/day • 94g avg
+                    </div>
+                </div>
+
+                <div class="space-y-0.5">
+                    <span class="text-[10px] font-mono-note font-bold uppercase tracking-wider text-[#6b6661]">Projected 12-Wk Weight</span>
+                    <div class="flex items-baseline gap-2">
+                        <span id="wkProjectedWeight" class="text-lg font-mono-note font-bold text-[#722f37]">116.8 lbs</span>
+                        <span id="wkProjectedLoss" class="text-xs font-mono-note font-semibold text-[#455c45]">(-8.2 lbs)</span>
+                    </div>
+                </div>
+
+                <div class="space-y-0.5">
+                    <span class="text-[10px] font-mono-note font-bold uppercase tracking-wider text-[#6b6661]">Projected Ab Score</span>
+                    <div class="flex items-center justify-between">
+                        <span id="wkProjectedAbs" class="text-lg font-mono-note font-bold text-[#24211e]">81 / 100</span>
+                        <span id="wkVerdictPill" class="px-2 py-0.5 rounded-xs text-xs font-mono-note font-semibold bg-[#eff4ef] text-[#455c45] border border-[#b8cab8]">Strong Pace</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Side-by-Side Comparison Matrix: Which Strategy Wins? -->
+        <section class="notepad-card p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#e6e1d8] pb-3 mb-5">
+                <div>
+                    <h2 class="text-sm font-mono-note font-bold uppercase tracking-wide text-[#722f37]">05 // Strategy Comparison</h2>
+                    <p class="text-xs text-[#6b6661]">Side-by-side outcomes accounting for your 12-min gym commute and variable work schedule.</p>
+                </div>
+                <span class="text-xs font-mono-note text-[#6b6661]">[Click any card to load]</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="comparisonGrid">
+                <!-- Cards dynamically rendered by JS -->
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Core Constants based on user profile (5'3", ~125 lbs starting, -10 lbs target)
+        const START_WEIGHT = 125.0;
+        const TARGET_WEIGHT = 115.0;
+        const BASE_LEAN_MASS = 96.0; // Estimated baseline lean mass in lbs
+        const HORIZON_WEEKS = 12;
+        const EST_MAINTENANCE_KCAL = 1800; // Estimated TDEE for 5'3", 125 lbs active female
+        const TARGET_PROTEIN_G = 100;
+
+        // DOM Elements
+        const sliderDeficit = document.getElementById('sliderDeficit');
+        const sliderProtein = document.getElementById('sliderProtein');
+        const sliderHomeSplit = document.getElementById('sliderHomeSplit');
+        const resetBtn = document.getElementById('resetBtn');
+        const inputCalories = document.getElementById('inputCalories');
+        const inputProtein = document.getElementById('inputProtein');
+        const syncDailyBtn = document.getElementById('syncDailyBtn');
+        const fillSampleWeekBtn = document.getElementById('fillSampleWeekBtn');
+        const syncWeekToSlidersBtn = document.getElementById('syncWeekToSlidersBtn');
+
+        // 7-Day Execution Tracker State (Mon - Sun)
+        let weeklyTrackerData = [
+            { day: 'Mon', cals: 1380, protein: 102, exerciseDone: true },
+            { day: 'Tue', cals: 1420, protein: 96,  exerciseDone: true },
+            { day: 'Wed', cals: 1550, protein: 82,  exerciseDone: false }, // Busy work crunch day
+            { day: 'Thu', cals: 1350, protein: 105, exerciseDone: true },
+            { day: 'Fri', cals: 1450, protein: 95,  exerciseDone: true },
+            { day: 'Sat', cals: 1650, protein: 88,  exerciseDone: true },
+            { day: 'Sun', cals: 1400, protein: 100, exerciseDone: false }
+        ];
+
+        // Simulation Engine: Models physiological + behavioral friction math
+        function simulateScenario(deficit, proteinCompliance, homeSplit) {
+            // 1. Behavioral Adherence Multiplier:
+            // Aggressive deficits (>550) cause burnout during busy work weeks.
+            // Relying 100% on a gym 12+ mins away lowers workout consistency on low-motivation days.
+            const deficitFatigue = deficit > 550 ? 1 - ((deficit - 550) / 1000) : 1.0;
+            
+            // Hybrid (40-70% home) maximizes consistency by removing travel friction while keeping gym progressive overload
+            const gymTripsPerWeek = Math.round(4 * (1 - homeSplit / 100));
+            const homeSessionsPerWeek = 4 - gymTripsPerWeek;
+            
+            // Workout adherence rate (penalized if 100% gym due to 24-min round-trip friction)
+            const workoutAdherence = Math.min(0.98, 0.62 + (homeSplit / 100) * 0.34);
+            
+            // Effective weekly caloric deficit accounting for schedule slips
+            const effectiveDailyDeficit = deficit * deficitFatigue * (0.75 + (proteinCompliance / 100) * 0.25);
+            const weeklyWeightLoss = (effectiveDailyDeficit * 7) / 3500;
+            
+            const totalWeightLost = Math.min(14, weeklyWeightLoss * HORIZON_WEEKS);
+            const endWeight = +(START_WEIGHT - totalWeightLost).toFixed(1);
+
+            // 2. Body Composition (Fat vs Muscle Split):
+            // High protein + resistance stimulus protects muscle. Low protein + high deficit burns muscle.
+            const stimulusFactor = (gymTripsPerWeek * 0.22 + homeSessionsPerWeek * 0.16) * workoutAdherence;
+            const proteinFactor = proteinCompliance / 100;
+            const deficitPenalty = deficit > 550 ? (deficit - 550) / 1200 : 0;
+
+            let fatLossRatio = 0.55 + (proteinFactor * 0.30) + (stimulusFactor * 0.18) - deficitPenalty;
+            fatLossRatio = Math.max(0.50, Math.min(0.96, fatLossRatio));
+
+            const fatLost = totalWeightLost * fatLossRatio;
+            const muscleLost = totalWeightLost * (1 - fatLossRatio);
+            const endLeanMass = +(BASE_LEAN_MASS - muscleLost).toFixed(1);
+
+            // 3. Ab Visibility Index (0 - 100):
+            // Requires both fat loss (revealing abs) AND core/lean mass retention (giving abs shape)
+            const fatDropScore = Math.min(65, (fatLost / 9.0) * 65);
+            const muscleRetentionScore = Math.max(0, 35 - (muscleLost * 14));
+            const coreBonus = homeSessionsPerWeek >= 2 ? 4 : 0; // Direct core frequency bonus
+            const abScore = Math.min(100, Math.round(fatDropScore + muscleRetentionScore + coreBonus));
+
+            // 4. Time Saved & Sustainability
+            const commuteMinsSavedWeekly = homeSessionsPerWeek * 24;
+            let burnoutRisk = "Low";
+            if (deficit >= 625 || (homeSplit <= 20 && deficit >= 500)) {
+                burnoutRisk = "High";
+            } else if (deficit >= 525 || homeSplit <= 20) {
+                burnoutRisk = "Moderate";
+            }
+
+            // Overall Composite Winner Score (balances reaching -10 lbs, visible abs, and sticking to it)
+            const goalProximity = Math.min(100, (totalWeightLost / 10) * 100);
+            const sustainabilityNum = burnoutRisk === "Low" ? 100 : burnoutRisk === "Moderate" ? 72 : 40;
+            const overallScore = Math.round((goalProximity * 0.35) + (abScore * 0.40) + (sustainabilityNum * 0.25));
+
+            return {
+                endWeight,
+                totalWeightLost: +totalWeightLost.toFixed(1),
+                fatLossRatio: Math.round(fatLossRatio * 100),
+                endLeanMass,
+                abScore,
+                commuteMinsSavedWeekly,
+                burnoutRisk,
+                gymTripsPerWeek,
+                homeSessionsPerWeek,
+                workoutAdherence: Math.round(workoutAdherence * 100),
+                overallScore
+            };
+        }
+
+        // Render SVG Line Chart
+        // Render SVG Line Chart (Burgundy & Sage Notepad Palette)
+        function renderChart(sim) {
+            const svg = document.getElementById('trajectoryChart');
+            const width = 600;
+            const height = 240;
+            const padLeft = 42;
+            const padRight = 20;
+            const padTop = 20;
+            const padBottom = 30;
+            const plotW = width - padLeft - padRight;
+            const plotH = height - padTop - padBottom;
+
+            const minW = 110;
+            const maxW = 127;
+
+            const getX = (week) => padLeft + (week / HORIZON_WEEKS) * plotW;
+            const getY = (weight) => padTop + ((maxW - weight) / (maxW - minW)) * plotH;
+
+            let html = '';
+
+            // Horizontal Grid Lines & Y-Axis Labels
+            [125, 120, 115, 110].forEach(w => {
+                const y = getY(w);
+                html += `<line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" stroke="#e6e1d8" stroke-width="1" />`;
+                html += `<text x="${padLeft - 8}" y="${y + 4}" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#6b6661">${w}lb</text>`;
+            });
+
+            // Target 115 lb Dashed Line (Sage Green)
+            const targetY = getY(TARGET_WEIGHT);
+            html += `<line x1="${padLeft}" y1="${targetY}" x2="${width - padRight}" y2="${targetY}" stroke="#5c765c" stroke-width="1.5" stroke-dasharray="5,4" />`;
+
+            // Build Points for Weight Trajectory
+            let weightPoints = [];
+            for (let w = 0; w <= HORIZON_WEEKS; w++) {
+                const progress = Math.pow(w / HORIZON_WEEKS, 0.94);
+                const currentW = START_WEIGHT - (sim.totalWeightLost * progress);
+                weightPoints.push({ x: getX(w), y: getY(currentW), w, val: currentW });
+            }
+
+            // Area under curve (Subtle Burgundy Tint)
+            const areaD = `M ${weightPoints[0].x} ${height - padBottom} ` +
+                          weightPoints.map(p => `L ${p.x} ${p.y}`).join(' ') +
+                          ` L ${weightPoints[weightPoints.length - 1].x} ${height - padBottom} Z`;
+
+            html += `
+                <defs>
+                    <linearGradient id="weightGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#722f37" stop-opacity="0.18"/>
+                        <stop offset="100%" stop-color="#722f37" stop-opacity="0.0"/>
+                    </linearGradient>
+                </defs>
+                <path d="${areaD}" fill="url(#weightGrad)" />
+            `;
+
+            // Main Weight Line (Burgundy)
+            const lineD = weightPoints.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+            html += `<path d="${lineD}" fill="none" stroke="#722f37" stroke-width="2.5" stroke-linecap="round" />`;
+
+            // X-Axis Week Labels & Data Dots
+            [0, 3, 6, 9, 12].forEach(wk => {
+                const pt = weightPoints[wk];
+                html += `<text x="${pt.x}" y="${height - 8}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#6b6661">Wk ${wk}</text>`;
+                html += `<circle cx="${pt.x}" cy="${pt.y}" r="3.5" fill="#faf8f5" stroke="#722f37" stroke-width="2" />`;
+                if (wk === 12) {
+                    html += `<rect x="${pt.x - 38}" y="${pt.y - 24}" width="46" height="18" rx="2" fill="#722f37" />`;
+                    html += `<text x="${pt.x - 15}" y="${pt.y - 12}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" font-weight="bold" fill="#ffffff">${sim.endWeight}</text>`;
+                }
+            });
+
+            svg.innerHTML = html;
+        }
+
+        // Render Dynamic Weekly Routine Cards (Notepad Marginalia Style)
+        function renderWeeklyRoutine(sim, proteinCompliance) {
+            const grid = document.getElementById('weeklyRoutineGrid');
+            const proteinGrams = Math.round(80 + (proteinCompliance / 100) * 30);
+            const extraHomeSessions = Math.max(0, sim.homeSessionsPerWeek - 2);
+
+            grid.innerHTML = `
+                <div class="p-3 rounded-xs bg-[#f8eff0]/60 border border-[#d9b8bc]">
+                    <div class="text-xs font-mono-note font-bold text-[#722f37]">2x Heavy-Core Pilates${extraHomeSessions > 0 ? ` + ${extraHomeSessions}x Home` : ''}</div>
+                    <p class="text-[11px] text-[#24211e]/80 mt-1">Fixed Tue & Thu/Fri. Builds deep core definition without gym travel.</p>
+                </div>
+                <div class="p-3 rounded-xs bg-[#eff4ef]/70 border border-[#b8cab8]">
+                    <div class="text-xs font-mono-note font-bold text-[#455c45]">${sim.gymTripsPerWeek}x Optional Gym Lift</div>
+                    <p class="text-[11px] text-[#24211e]/80 mt-1">Scheduled on open days (Mon/Sat) when schedule & energy permit.</p>
+                </div>
+                <div class="p-3 rounded-xs bg-[#faf8f5] border border-[#dcd5c9]">
+                    <div class="text-xs font-mono-note font-bold text-[#24211e]">${proteinGrams}g Daily Protein Floor</div>
+                    <p class="text-[11px] text-[#6b6661] mt-1">Anchor quick work meals with Greek yogurt, shakes, or pre-cooked chicken.</p>
+                </div>
+            `;
+        }
+
+        // Render Side-by-Side Comparison Matrix
+        function renderComparisonCards(currentDeficit, currentProtein, currentHomeSplit) {
+            const options = [
+                {
+                    id: 'custom',
+                    title: 'Your Live Plan',
+                    tag: 'Active Sliders',
+                    deficit: currentDeficit,
+                    protein: currentProtein,
+                    homeSplit: currentHomeSplit,
+                    desc: 'Your current custom balance of deficit, protein floor, and commute-saving workouts.'
+                },
+                {
+                    id: 'crash',
+                    title: 'Aggressive Diet + Gym Only',
+                    tag: 'High Burnout',
+                    deficit: 675,
+                    protein: 45,
+                    homeSplit: 0,
+                    desc: 'Strict calorie cuts with 4x/wk gym trips. Fails during work crunches and burns muscle.'
+                },
+                {
+                    id: 'hybrid',
+                    title: 'Hybrid Recomp (Recommended)',
+                    tag: 'Best Balance',
+                    deficit: 425,
+                    protein: 85,
+                    homeSplit: 60,
+                    desc: 'Moderate deficit, high protein floor, and 60% home core workouts to bypass gym travel.'
+                },
+                {
+                    id: 'home_only',
+                    title: '100% Home + Gentle Deficit',
+                    tag: 'Zero Commute',
+                    deficit: 300,
+                    protein: 80,
+                    homeSplit: 100,
+                    desc: 'Eliminates all gym travel friction. Very easy to sustain, though 10-lb loss takes ~15 weeks.'
+                }
+            ];
+
+            // Calculate results for all 4 to determine which wins
+            const evaluated = options.map(opt => ({
+                ...opt,
+                res: simulateScenario(opt.deficit, opt.protein, opt.homeSplit)
+            }));
+
+            const highestScore = Math.max(...evaluated.map(e => e.res.overallScore));
+
+            const grid = document.getElementById('comparisonGrid');
+            grid.innerHTML = evaluated.map(item => {
+                const isWinner = item.res.overallScore === highestScore;
+                const isCustom = item.id === 'custom';
+
+                return `
+                    <div onclick="applyPreset(${item.deficit}, ${item.protein}, ${item.homeSplit})" 
+                         class="cursor-pointer rounded-xs p-4 border transition-all flex flex-col justify-between ${
+                            isWinner 
+                                ? 'bg-[#eff4ef]/60 border-[#5c765c] border-2' 
+                                : isCustom 
+                                    ? 'bg-[#faf8f5] border-[#722f37]' 
+                                    : 'bg-white border-[#dcd5c9] hover:border-[#722f37]/60'
+                         }">
+                        <div>
+                            <div class="flex items-center justify-between gap-1 mb-2">
+                                <span class="text-[10px] font-mono-note font-bold uppercase tracking-wider px-2 py-0.5 rounded-xs ${
+                                    isWinner ? 'bg-[#5c765c] text-white' : isCustom ? 'bg-[#f8eff0] text-[#722f37] border border-[#d9b8bc]' : 'bg-[#faf8f5] text-[#6b6661] border border-[#dcd5c9]'
+                                }">
+                                    ${isWinner ? '★ Winner' : item.tag}
+                                </span>
+                                <span class="text-xs font-mono-note font-bold text-[#24211e]">${item.res.overallScore}/100</span>
+                            </div>
+                            <h3 class="text-sm font-bold text-[#24211e]">${item.title}</h3>
+                            <p class="text-xs text-[#6b6661] mt-1 leading-relaxed">${item.desc}</p>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-t border-dashed border-[#dcd5c9] space-y-1.5 text-xs">
+                            <div class="flex justify-between">
+                                <span class="text-[#6b6661]">12-Wk Weight:</span>
+                                <span class="font-mono-note font-bold text-[#24211e]">${item.res.endWeight} lbs (-${item.res.totalWeightLost})</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-[#6b6661]">Ab Visibility:</span>
+                                <span class="font-mono-note font-bold ${item.res.abScore >= 80 ? 'text-[#455c45]' : 'text-[#24211e]'}">${item.res.abScore}/100</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-[#6b6661]">Pure Fat Loss:</span>
+                                <span class="font-mono-note font-semibold text-[#24211e]">${item.res.fatLossRatio}%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-[#6b6661]">Burnout Risk:</span>
+                                <span class="font-mono-note font-semibold ${
+                                    item.res.burnoutRisk === 'Low' ? 'text-[#455c45]' : 
+                                    item.res.burnoutRisk === 'Moderate' ? 'text-amber-700' : 'text-[#722f37]'
+                                }">${item.res.burnoutRisk}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Apply preset values when user clicks a comparison card
+        window.applyPreset = function(deficit, protein, homeSplit) {
+            sliderDeficit.value = deficit;
+            sliderProtein.value = protein;
+            sliderHomeSplit.value = homeSplit;
+            updateDashboard();
+        };
+
+        // Evaluate Daily Intake Reality Check
+        function updateDailyIntakeCheck() {
+            const cals = Math.max(0, parseInt(inputCalories.value, 10) || 0);
+            const prot = Math.max(0, parseInt(inputProtein.value, 10) || 0);
+            const homeSplit = parseInt(sliderHomeSplit.value, 10);
+
+            const rawDeficit = EST_MAINTENANCE_KCAL - cals;
+            const protPct = Math.min(100, Math.round((prot / TARGET_PROTEIN_G) * 100));
+
+            // Update helper captions under inputs
+            const calDiffText = document.getElementById('calDiffText');
+            if (rawDeficit > 0) {
+                calDiffText.textContent = `${rawDeficit} kcal deficit vs. maintenance`;
+                calDiffText.className = "text-[11px] font-medium text-[#455c45] mt-1.5";
+            } else if (rawDeficit === 0) {
+                calDiffText.textContent = `0 kcal (At maintenance weight)`;
+                calDiffText.className = "text-[11px] font-medium text-[#6b6661] mt-1.5";
+            } else {
+                calDiffText.textContent = `+${Math.abs(rawDeficit)} kcal surplus (Weight gain)`;
+                calDiffText.className = "text-[11px] font-medium text-[#722f37] mt-1.5";
+            }
+
+            const protDiffText = document.getElementById('protDiffText');
+            protDiffText.textContent = `${protPct}% of ${TARGET_PROTEIN_G}g daily floor`;
+            protDiffText.className = protPct >= 85 
+                ? "text-[11px] font-medium text-[#455c45] mt-1.5" 
+                : protPct >= 60 
+                    ? "text-[11px] font-medium text-amber-700 mt-1.5" 
+                    : "text-[11px] font-medium text-[#722f37] mt-1.5";
+
+            // Project outcome if this day is repeated
+            const verdictBadge = document.getElementById('dailyVerdictBadge');
+            const timelineText = document.getElementById('dailyTimelineText');
+            const impactSummary = document.getElementById('dailyImpactSummary');
+            const singleDayNote = document.getElementById('dailySingleDayNote');
+
+            if (rawDeficit <= 0) {
+                const weeklyGain = ((Math.abs(rawDeficit) * 7) / 3500).toFixed(2);
+                verdictBadge.textContent = "Surplus / Stalled";
+                verdictBadge.className = "px-2 py-0.5 rounded-xs text-xs font-mono-note font-bold bg-[#f8eff0] text-[#722f37] border border-[#d9b8bc]";
+                timelineText.textContent = "Moves away from 115 lb goal";
+                impactSummary.innerHTML = `Repeating today's intake leads to <span class="font-mono-note font-bold text-[#722f37]">+${weeklyGain} lbs/week</span>, keeping abs hidden regardless of workouts.`;
+                singleDayNote.textContent = `Single-day impact: +${Math.abs(rawDeficit)} kcal surplus. Balance it out with a lighter dinner tomorrow.`;
+                return;
+            }
+
+            const simDeficit = Math.min(750, Math.max(150, rawDeficit));
+            const simProt = Math.min(100, Math.max(30, protPct));
+            const sim = simulateScenario(simDeficit, simProt, homeSplit);
+
+            const dailyFatLbs = (rawDeficit / 3500) * (sim.fatLossRatio / 100);
+            const weeksToGoal = sim.totalWeightLost > 0 ? Math.round((10 / (sim.totalWeightLost / 12)) * 10) / 10 : "∞";
+
+            if (sim.abScore >= 80 && rawDeficit >= 300 && rawDeficit <= 600) {
+                verdictBadge.textContent = "Optimal Recomp Day";
+                verdictBadge.className = "px-2 py-0.5 rounded-xs text-xs font-mono-note font-bold bg-[#eff4ef] text-[#455c45] border border-[#b8cab8]";
+            } else if (rawDeficit > 600 && prot < 80) {
+                verdictBadge.textContent = "Muscle Loss Warning";
+                verdictBadge.className = "px-2 py-0.5 rounded-xs text-xs font-mono-note font-bold bg-amber-50 text-amber-800 border border-amber-300";
+            } else {
+                verdictBadge.textContent = "Steady Progress";
+                verdictBadge.className = "px-2 py-0.5 rounded-xs text-xs font-mono-note font-bold bg-[#eff4ef] text-[#455c45] border border-[#b8cab8]";
+            }
+
+            timelineText.textContent = `Est. ${weeksToGoal} weeks to -10 lbs`;
+            impactSummary.innerHTML = `Repeating today's intake projects <span class="font-mono-note font-bold text-[#722f37]">${sim.endWeight} lbs</span> in 12 weeks with an Ab Visibility score of <span class="font-mono-note font-bold text-[#455c45]">${sim.abScore}/100</span>.`;
+            singleDayNote.textContent = `Single-day impact: Burns ~${dailyFatLbs.toFixed(2)} lbs of pure fat today (${sim.fatLossRatio}% fat-to-muscle ratio).`;
+        }
+
+        // Build & Update 7-Day Execution Tracker + Real-World Projection
+        function renderWeeklyTracker() {
+            const targetDeficit = parseInt(sliderDeficit.value, 10);
+            const targetDailyCals = EST_MAINTENANCE_KCAL - targetDeficit;
+            const homeSplit = parseInt(sliderHomeSplit.value, 10);
+            const gymTripsPerWeek = Math.round(4 * (1 - homeSplit / 100));
+            const extraHomeSessions = Math.max(0, (4 - gymTripsPerWeek) - 2);
+
+            // Lock in Tue (index 1) and Thu (index 3) as Heavy Core Pilates, with Fri (index 4) as Flex/Pilates
+            const dayPlans = ['Rest / Walk', 'Core Pilates', 'Rest / Walk', 'Core Pilates', 'Fri Flex / Core', 'Rest / Walk', 'Rest / Walk'];
+            
+            // Fill remaining non-Pilates slots (Mon, Sat, Sun) based on slider's Gym vs Home split
+            const openSlots = [0, 5, 6];
+            let gymLeft = gymTripsPerWeek;
+            let homeLeft = extraHomeSessions;
+            openSlots.forEach(idx => {
+                if (gymLeft > 0) {
+                    dayPlans[idx] = 'Gym Lift';
+                    gymLeft--;
+                } else if (homeLeft > 0) {
+                    dayPlans[idx] = 'Home Core';
+                    homeLeft--;
+                }
+            });
+
+            const grid = document.getElementById('weeklyTrackerGrid');
+            grid.innerHTML = weeklyTrackerData.map((item, idx) => {
+                const calHit = item.cals <= targetDailyCals + 50;
+                const protHit = item.protein >= 90;
+                const planLabel = dayPlans[idx];
+                const isRest = planLabel === 'Rest / Walk';
+                const isPilates = planLabel.includes('Pilates') || planLabel.includes('Flex');
+
+                return `
+                    <div class="rounded-xs border ${item.exerciseDone && calHit && protHit ? 'border-[#5c765c] bg-[#eff4ef]/40' : 'border-[#dcd5c9] bg-[#faf8f5]'} p-3 flex flex-col justify-between space-y-2.5">
+                        <div class="flex items-center justify-between border-b border-dashed border-[#dcd5c9] pb-1.5">
+                            <span class="text-xs font-mono-note font-bold text-[#24211e]">${item.day}</span>
+                            <span class="text-[10px] font-mono-note font-semibold px-1.5 py-0.5 rounded-xs ${
+                                isPilates ? 'bg-[#f8eff0] text-[#722f37] border border-[#d9b8bc]' :
+                                planLabel === 'Home Core' ? 'bg-[#eff4ef] text-[#455c45] border border-[#b8cab8]' :
+                                planLabel === 'Gym Lift' ? 'bg-white text-[#24211e] border border-[#dcd5c9]' :
+                                'bg-transparent text-[#6b6661]'
+                            }">${planLabel}</span>
+                        </div>
+
+                        <!-- Daily Calories Input + Status Dot -->
+                        <div>
+                            <div class="flex justify-between items-center text-[10px] font-mono-note mb-0.5">
+                                <span class="text-[#6b6661]">Calories</span>
+                                <span class="${calHit ? 'text-[#455c45] font-bold' : 'text-[#722f37] font-bold'}">${calHit ? '✓ Hit' : 'Over'}</span>
+                            </div>
+                            <input type="number" data-day="${idx}" data-field="cals" value="${item.cals}" step="25"
+                                class="tracker-input w-full rounded-xs border border-[#dcd5c9] bg-white px-2 py-1 text-xs font-mono-note font-bold text-[#24211e] focus:border-[#722f37] focus:outline-none">
+                        </div>
+
+                        <!-- Daily Protein Input + Status Dot -->
+                        <div>
+                            <div class="flex justify-between items-center text-[10px] font-mono-note mb-0.5">
+                                <span class="text-[#6b6661]">Protein (g)</span>
+                                <span class="${protHit ? 'text-[#455c45] font-bold' : 'text-amber-700 font-bold'}">${protHit ? '✓ Hit' : 'Low'}</span>
+                            </div>
+                            <input type="number" data-day="${idx}" data-field="protein" value="${item.protein}" step="5"
+                                class="tracker-input w-full rounded-xs border border-[#dcd5c9] bg-white px-2 py-1 text-xs font-mono-note font-bold text-[#24211e] focus:border-[#5c765c] focus:outline-none">
+                        </div>
+
+                        <!-- Exercise Completion Toggle -->
+                        <button type="button" data-day="${idx}" class="tracker-ex-toggle w-full py-1.5 px-2 rounded-xs text-[11px] font-mono-note font-semibold border transition cursor-pointer flex items-center justify-center gap-1 ${
+                            item.exerciseDone 
+                                ? 'bg-[#5c765c] text-white border-[#5c765c]' 
+                                : 'bg-white text-[#6b6661] border-[#dcd5c9] hover:border-[#722f37]'
+                        }">
+                            ${item.exerciseDone ? '✓ Done' : (isRest ? 'Mark Rest' : 'Missed')}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            // Attach live input & toggle listeners
+            grid.querySelectorAll('.tracker-input').forEach(inp => {
+                inp.addEventListener('change', (e) => {
+                    const idx = parseInt(e.target.dataset.day, 10);
+                    const field = e.target.dataset.field;
+                    weeklyTrackerData[idx][field] = Math.max(0, parseInt(e.target.value, 10) || 0);
+                    renderWeeklyTracker();
+                });
+            });
+
+            grid.querySelectorAll('.tracker-ex-toggle').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(e.currentTarget.dataset.day, 10);
+                    weeklyTrackerData[idx].exerciseDone = !weeklyTrackerData[idx].exerciseDone;
+                    renderWeeklyTracker();
+                });
+            });
+
+            updateWeeklyProjectionSummary(targetDailyCals, homeSplit);
+        }
+
+        // Calculate & Display 12-Week Projection from the 7-Day Logged Week
+        function updateWeeklyProjectionSummary(targetDailyCals, homeSplit) {
+            let totalCals = 0;
+            let totalProt = 0;
+            let calDaysHit = 0;
+            let protDaysHit = 0;
+            let exDaysDone = 0;
+
+            weeklyTrackerData.forEach(d => {
+                totalCals += d.cals;
+                totalProt += d.protein;
+                if (d.cals <= targetDailyCals + 50) calDaysHit++;
+                if (d.protein >= 90) protDaysHit++;
+                if (d.exerciseDone) exDaysDone++;
+            });
+
+            const avgCals = Math.round(totalCals / 7);
+            const avgProt = Math.round(totalProt / 7);
+            const actualAvgDeficit = EST_MAINTENANCE_KCAL - avgCals;
+            const actualProtCompliance = Math.round((protDaysHit / 7) * 100);
+
+            document.getElementById('wkCalCompliance').textContent = `Cal: ${calDaysHit}/7 days`;
+            document.getElementById('wkProtCompliance').textContent = `Prot: ${protDaysHit}/7 days`;
+            document.getElementById('wkExCompliance').textContent = `Ex: ${exDaysDone}/7 days`;
+            document.getElementById('wkActualAverages').textContent = `${actualAvgDeficit >= 0 ? actualAvgDeficit : '+' + Math.abs(actualAvgDeficit)} kcal/day • ${avgProt}g avg`;
+
+            // Run projection using actual logged weekly habits
+            const effectiveDeficit = Math.max(0, actualAvgDeficit);
+            const exerciseAdherenceBoost = Math.min(1.05, 0.70 + (exDaysDone / 5) * 0.30);
+            const weeklyLossLbs = ((effectiveDeficit * 7) / 3500) * exerciseAdherenceBoost;
+            const projectedLoss12Wk = +(Math.min(14, weeklyLossLbs * HORIZON_WEEKS)).toFixed(1);
+            const projectedWeight12Wk = +(START_WEIGHT - projectedLoss12Wk).toFixed(1);
+
+            const simForAbs = simulateScenario(
+                Math.min(750, Math.max(150, effectiveDeficit)),
+                Math.min(100, Math.max(30, actualProtCompliance)),
+                homeSplit
+            );
+            // Adjust Ab score by actual exercise completion ratio
+            const adjustedAbScore = Math.min(100, Math.round(simForAbs.abScore * (0.75 + Math.min(5, exDaysDone) * 0.05)));
+
+            document.getElementById('wkProjectedWeight').textContent = `${projectedWeight12Wk.toFixed(1)} lbs`;
+            document.getElementById('wkProjectedLoss').textContent = projectedLoss12Wk > 0 ? `(-${projectedLoss12Wk.toFixed(1)} lbs)` : `(0.0 lbs)`;
+            document.getElementById('wkProjectedAbs').textContent = `${adjustedAbScore} / 100`;
+
+            const verdictPill = document.getElementById('wkVerdictPill');
+            if (projectedLoss12Wk >= 8.5 && adjustedAbScore >= 80) {
+                verdictPill.textContent = "Hits Goal & Abs";
+                verdictPill.className = "px-2 py-0.5 rounded-xs text-xs font-mono-note font-semibold bg-[#eff4ef] text-[#455c45] border border-[#b8cab8]";
+            } else if (projectedLoss12Wk >= 5.0) {
+                verdictPill.textContent = "Steady Progress";
+                verdictPill.className = "px-2 py-0.5 rounded-xs text-xs font-mono-note font-semibold bg-[#f8eff0] text-[#722f37] border border-[#d9b8bc]";
+            } else {
+                verdictPill.textContent = "Needs Tighter Week";
+                verdictPill.className = "px-2 py-0.5 rounded-xs text-xs font-mono-note font-semibold bg-amber-50 text-amber-800 border border-amber-300";
+            }
+        }
+
+        // Main Update Loop
+        function updateDashboard() {
+            const deficit = parseInt(sliderDeficit.value, 10);
+            const protein = parseInt(sliderProtein.value, 10);
+            const homeSplit = parseInt(sliderHomeSplit.value, 10);
+
+            // Update Slider Readouts
+            document.getElementById('valDeficit').textContent = `${deficit} kcal/day`;
+            document.getElementById('valProtein').textContent = `${protein}% of days`;
+            document.getElementById('valHomeSplit').textContent = `${homeSplit}% Home / ${100 - homeSplit}% Gym`;
+
+            // Run Simulation
+            const sim = simulateScenario(deficit, protein, homeSplit);
+
+            // Update Hero Goal Metrics
+            document.getElementById('heroWeight').textContent = sim.endWeight.toFixed(1);
+            document.getElementById('weightBadge').textContent = `-${sim.totalWeightLost.toFixed(1)} lbs`;
+            
+            const goalPct = Math.min(100, Math.round((sim.totalWeightLost / 10) * 100));
+            document.getElementById('goalPercentText').textContent = `${goalPct}%`;
+            document.getElementById('goalProgressBar').style.width = `${goalPct}%`;
+
+            document.getElementById('heroAbScore').textContent = sim.abScore;
+            const abBadge = document.getElementById('abStatusBadge');
+            if (sim.abScore >= 82) {
+                abBadge.textContent = "Visible Abs";
+                abBadge.className = "px-2 py-0.5 rounded-xs text-xs font-mono-note font-semibold bg-[#eff4ef] text-[#455c45] border border-[#b8cab8]";
+            } else if (sim.abScore >= 65) {
+                abBadge.textContent = "Toned Core";
+                abBadge.className = "px-2 py-0.5 rounded-xs text-xs font-mono-note font-semibold bg-[#f8eff0] text-[#722f37] border border-[#d9b8bc]";
+            } else {
+                abBadge.textContent = "Soft / Hidden";
+                abBadge.className = "px-2 py-0.5 rounded-xs text-xs font-mono-note font-semibold bg-amber-50 text-amber-800 border border-amber-300";
+            }
+
+            document.getElementById('heroFatRatio').textContent = `${sim.fatLossRatio}%`;
+            const muscleBadge = document.getElementById('muscleBadge');
+            if (sim.fatLossRatio >= 82) {
+                muscleBadge.textContent = "Protected";
+                muscleBadge.className = "px-2 py-0.5 rounded-xs text-xs font-mono-note font-semibold bg-[#eff4ef] text-[#455c45] border border-[#b8cab8]";
+            } else {
+                muscleBadge.textContent = "Muscle Risk";
+                muscleBadge.className = "px-2 py-0.5 rounded-xs text-xs font-mono-note font-semibold bg-[#f8eff0] text-[#722f37] border border-[#d9b8bc]";
+            }
+
+            document.getElementById('heroSustainability').textContent = sim.burnoutRisk;
+            document.getElementById('commuteSavedBadge').textContent = `${sim.commuteMinsSavedWeekly}m saved/wk`;
+
+            // Render Sub-components
+            renderChart(sim);
+            renderWeeklyRoutine(sim, protein);
+            renderComparisonCards(deficit, protein, homeSplit);
+            updateDailyIntakeCheck();
+            renderWeeklyTracker();
+        }
+
+        // Event Listeners
+        sliderDeficit.addEventListener('input', updateDashboard);
+        sliderProtein.addEventListener('input', updateDashboard);
+        sliderHomeSplit.addEventListener('input', updateDashboard);
+        inputCalories.addEventListener('input', updateDailyIntakeCheck);
+        inputProtein.addEventListener('input', updateDailyIntakeCheck);
+
+        fillSampleWeekBtn.addEventListener('click', () => {
+            weeklyTrackerData = [
+                { day: 'Mon', cals: 1375, protein: 104, exerciseDone: true },
+                { day: 'Tue', cals: 1400, protein: 98,  exerciseDone: true },
+                { day: 'Wed', cals: 1620, protein: 78,  exerciseDone: false }, // Work crunch day
+                { day: 'Thu', cals: 1350, protein: 105, exerciseDone: true },
+                { day: 'Fri', cals: 1410, protein: 95,  exerciseDone: true },
+                { day: 'Sat', cals: 1580, protein: 92,  exerciseDone: true },
+                { day: 'Sun', cals: 1390, protein: 100, exerciseDone: true }
+            ];
+            renderWeeklyTracker();
+        });
+
+        syncWeekToSlidersBtn.addEventListener('click', () => {
+            const avgCals = weeklyTrackerData.reduce((acc, d) => acc + d.cals, 0) / 7;
+            const protDaysHit = weeklyTrackerData.filter(d => d.protein >= 90).length;
+            const derivedDeficit = Math.min(750, Math.max(150, Math.round((EST_MAINTENANCE_KCAL - avgCals) / 25) * 25));
+            const derivedProtPct = Math.min(100, Math.max(30, Math.round(((protDaysHit / 7) * 100) / 5) * 5));
+
+            sliderDeficit.value = derivedDeficit;
+            sliderProtein.value = derivedProtPct;
+            updateDashboard();
+        });
+
+        syncDailyBtn.addEventListener('click', () => {
+            const cals = parseInt(inputCalories.value, 10) || 1400;
+            const prot = parseInt(inputProtein.value, 10) || 95;
+            const derivedDeficit = Math.min(750, Math.max(150, Math.round((EST_MAINTENANCE_KCAL - cals) / 25) * 25));
+            const derivedProtPct = Math.min(100, Math.max(30, Math.round(((prot / TARGET_PROTEIN_G) * 100) / 5) * 5));
+
+            sliderDeficit.value = derivedDeficit;
+            sliderProtein.value = derivedProtPct;
+            updateDashboard();
+        });
+
+        resetBtn.addEventListener('click', () => {
+            sliderDeficit.value = 425;
+            sliderProtein.value = 85;
+            sliderHomeSplit.value = 60;
+            inputCalories.value = 1375;
+            inputProtein.value = 95;
+            updateDashboard();
+        });
+
+        // Initial Render
+        window.addEventListener('DOMContentLoaded', updateDashboard);
+    </script>
+</body>
+</html>
