@@ -87,6 +87,12 @@
                 <span class="inline-flex items-center px-2.5 py-1 rounded-xs text-xs font-mono-note font-medium bg-[#eff4ef] text-[#455c45] border border-[#b8cab8]">
                     12-Week Horizon
                 </span>
+                <div class="flex items-center gap-1.5 px-2 py-1 rounded-xs bg-white border border-[#dcd5c9] text-xs font-mono-note">
+                    <span class="text-[#6b6661]">Start:</span>
+                    <input type="number" id="inputStartWeight" value="125.0" step="0.5" min="90" max="250"
+                        class="w-14 font-bold text-[#24211e] bg-transparent focus:outline-none text-right">
+                    <span class="text-[#6b6661]">lbs</span>
+                </div>
                 <button id="toggleAllBtn" class="text-xs font-mono-note font-medium text-[#455c45] hover:bg-[#eff4ef] px-3 py-1.5 rounded-xs border border-[#b8cab8] transition cursor-pointer">
                     [Collapse All]
                 </button>
@@ -459,20 +465,22 @@
                 </div>
             </div>
 
-            <div id="sec-comparison" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-5">
-                <!-- Cards dynamically rendered by JS -->
+            <div id="sec-comparison" class="pt-5">
+                <div id="comparisonGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Cards dynamically rendered by JS -->
+                </div>
             </div>
         </section>
 
     </main>
 
     <script>
-        // Core Constants based on user profile (5'3", ~125 lbs starting, -10 lbs target)
-        const START_WEIGHT = 125.0;
-        const TARGET_WEIGHT = 115.0;
+        // Core Constants based on user profile (5'3", custom baseline starting weight, -10 lbs target)
+        let START_WEIGHT = 125.0;
+        let TARGET_WEIGHT = 115.0;
         const BASE_LEAN_MASS = 96.0; // Estimated baseline lean mass in lbs
         const HORIZON_WEEKS = 12;
-        const EST_MAINTENANCE_KCAL = 1800; // Estimated TDEE for 5'3", 125 lbs active female
+        const EST_MAINTENANCE_KCAL = 1800; // Estimated TDEE for 5'3" active female
         const TARGET_PROTEIN_G = 100;
 
         // DOM Elements
@@ -482,6 +490,7 @@
         const resetBtn = document.getElementById('resetBtn');
         const inputCalories = document.getElementById('inputCalories');
         const inputProtein = document.getElementById('inputProtein');
+        const inputStartWeight = document.getElementById('inputStartWeight');
         const syncDailyBtn = document.getElementById('syncDailyBtn');
         const fillSampleWeekBtn = document.getElementById('fillSampleWeekBtn');
         const syncWeekToSlidersBtn = document.getElementById('syncWeekToSlidersBtn');
@@ -587,8 +596,8 @@
             const plotW = width - padLeft - padRight;
             const plotH = height - padTop - padBottom;
 
-            const minW = 110;
-            const maxW = 127;
+            const minW = Math.floor(TARGET_WEIGHT - 3);
+            const maxW = Math.ceil(START_WEIGHT + 2);
 
             const getX = (week) => padLeft + (week / HORIZON_WEEKS) * plotW;
             const getY = (weight) => padTop + ((maxW - weight) / (maxW - minW)) * plotH;
@@ -596,13 +605,13 @@
             let html = '';
 
             // Horizontal Grid Lines & Y-Axis Labels
-            [125, 120, 115, 110].forEach(w => {
+            [maxW, Math.round((maxW + TARGET_WEIGHT)/2), TARGET_WEIGHT, minW].forEach(w => {
                 const y = getY(w);
                 html += `<line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" stroke="#e6e1d8" stroke-width="1" />`;
                 html += `<text x="${padLeft - 8}" y="${y + 4}" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#6b6661">${w}lb</text>`;
             });
 
-            // Target 115 lb Dashed Line (Sage Green)
+            // Target Dashed Line (Sage Green)
             const targetY = getY(TARGET_WEIGHT);
             html += `<line x1="${padLeft}" y1="${targetY}" x2="${width - padRight}" y2="${targetY}" stroke="#5c765c" stroke-width="1.5" stroke-dasharray="5,4" />`;
 
@@ -1109,6 +1118,12 @@
             const deficit = parseInt(sliderDeficit.value, 10);
             const protein = parseInt(sliderProtein.value, 10);
             const homeSplit = parseInt(sliderHomeSplit.value, 10);
+            
+            const parsedStart = parseFloat(inputStartWeight.value);
+            if (!isNaN(parsedStart) && parsedStart > 70 && parsedStart < 300) {
+                START_WEIGHT = parsedStart;
+                TARGET_WEIGHT = +(START_WEIGHT - 10.0).toFixed(1);
+            }
 
             // Update Slider Readouts
             document.getElementById('valDeficit').textContent = `${deficit} kcal/day`;
@@ -1167,6 +1182,7 @@
         sliderHomeSplit.addEventListener('input', updateDashboard);
         inputCalories.addEventListener('input', updateDailyIntakeCheck);
         inputProtein.addEventListener('input', updateDailyIntakeCheck);
+        inputStartWeight.addEventListener('input', updateDashboard);
 
         fillSampleWeekBtn.addEventListener('click', () => {
             weeklyTrackerData = [
@@ -1209,6 +1225,9 @@
             sliderHomeSplit.value = 60;
             inputCalories.value = 1375;
             inputProtein.value = 95;
+            inputStartWeight.value = "125.0";
+            START_WEIGHT = 125.0;
+            TARGET_WEIGHT = 115.0;
             weekCheckpoints.forEach(cp => {
                 cp.completed = false;
                 cp.customWeight = null;
